@@ -5,13 +5,12 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local workspace = game:GetService("Workspace")
 local runService = game:GetService("RunService")
-local compass = game:GetService("ReplicatedStorage"):WaitForChild("Compass")
-local questNPCs = workspace:WaitForChild("QuestNPCs") -- Assuming the NPCs are stored here
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local compass = replicatedStorage:WaitForChild("Compass") -- Assuming Compass is relevant for questing
 
 -- UI Setup for Mod Menu
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ModMenu"
-ScreenGui.Parent = player:WaitForChild("PlayerGui")  -- Ensure this is parented to PlayerGui
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 200, 0, 250)
@@ -42,7 +41,6 @@ local autoFarmActive = false
 local autoQuestActive = false
 local currentQuest = nil
 local nextQuestNPC = nil
-local questProgress = {}  -- Store the progress for each quest
 
 -- Toggle Functions
 autoFarmButton.MouseButton1Click:Connect(function()
@@ -61,9 +59,9 @@ end)
 
 -- Helper Functions
 local function findQuestNPC()
-    -- Find the closest NPC that gives the next quest
-    for _, npc in pairs(questNPCs:GetChildren()) do
-        if npc:FindFirstChild("QuestGiver") then
+    -- Find the closest NPC that gives the next quest (placeholder logic, replace based on game structure)
+    for _, npc in pairs(workspace:GetChildren()) do
+        if npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("QuestGiver") then
             return npc
         end
     end
@@ -72,21 +70,18 @@ end
 
 -- Function to interact with the NPC and start a new quest
 local function startNewQuest(npc)
-    -- Example: Look for a Quest GUI button, interact and start quest
+    -- Interact with the NPC and start the quest
     local questButton = npc:FindFirstChild("QuestButton")
     if questButton then
-        questButton:Click()  -- Interact with the quest NPC
+        questButton:Click()
         print("Quest started: " .. npc.Name)
-        currentQuest = npc.Name  -- Update current quest name (optional)
-        -- Initialize progress for this quest
-        questProgress[currentQuest] = { kills = 0, requiredKills = math.random(5, 20) }
+        currentQuest = npc.Name
     end
 end
 
 -- Function to teleport to a quest NPC location (automatically detected)
 local function teleportToQuestLocation()
     if nextQuestNPC then
-        -- Teleport to the next quest NPC position
         humanoidRootPart.CFrame = nextQuestNPC.HumanoidRootPart.CFrame
         print("Teleported to: " .. nextQuestNPC.Name)
     end
@@ -98,17 +93,16 @@ local function detectNextQuest()
     nextQuestNPC = findQuestNPC()
     
     if nextQuestNPC then
-        -- If a new quest NPC is found, teleport to that NPC
+        -- Teleport to that NPC
         teleportToQuestLocation()
-
-        -- Start the new quest automatically
+        -- Start the quest automatically
         startNewQuest(nextQuestNPC)
     end
 end
 
 -- Function to start farming/attacking enemies
 local function startAutoFarm()
-    -- Example: Automatically farm enemies for the quest
+    -- Find closest enemy to the character
     local targetEnemy = findClosestEnemy()
     if targetEnemy then
         magnetToEnemy(targetEnemy)
@@ -116,59 +110,21 @@ local function startAutoFarm()
     end
 end
 
--- Quest Completion Check Function (Improved)
-function checkQuestCompletion(questName)
-    -- Check the current quest progress
-    local progress = questProgress[questName]
-    if progress then
-        -- Example: Quest requires killing enemies
-        if progress.kills >= progress.requiredKills then
-            return true  -- Quest completed
-        end
-    end
-    return false  -- Quest not completed yet
-end
-
 -- Main Loop: Handles auto quest, auto farm, and quest progression
 runService.Heartbeat:Connect(function()
     if autoFarmActive then
-        -- Start auto farming if needed
         startAutoFarm()
     end
-
+    
     if autoQuestActive then
-        -- Detect new quest if it's time to move on to the next quest
         detectNextQuest()
     end
 end)
 
--- Loop Quest function
-local function loopQuest()
-    while autoQuestActive do
-        -- Continuously check if a quest is completed
-        if currentQuest then
-            local questCompleted = checkQuestCompletion(currentQuest)
-            if questCompleted then
-                print("Quest Completed: " .. currentQuest)
-                detectNextQuest()  -- Move to the next quest automatically
-            end
-        end
-        wait(1)  -- Check every second for quest completion
-    end
-end
-
--- Start the loop for quest checking
-runService.Heartbeat:Connect(function()
-    if autoQuestActive then
-        loopQuest()  -- Start checking quest completion and handle next quest in a loop
-    end
-end)
-
--- Detect if the quest is completed (based on your game logic)
+-- Quest Completion Check (based on quest mechanics in the game)
 function checkQuestCompletion(questName)
-    -- Replace with the actual condition that checks if the quest is completed
-    -- Example: If quest level is achieved or enemies are defeated
-    return true -- Just a placeholder, this condition will vary based on quest system
+    -- Example logic to check if the quest is completed (customize this)
+    return true -- Replace this with the actual condition that checks if the quest is completed
 end
 
 -- Function to find the closest enemy
@@ -197,10 +153,6 @@ function attackEnemy(enemy)
     local humanoid = enemy:FindFirstChild("Humanoid")
     if humanoid and humanoid.Health > 0 then
         humanoid:TakeDamage(10)  -- Adjust damage value here
-
-        -- Update quest progress for kills
-        if currentQuest and questProgress[currentQuest] then
-            questProgress[currentQuest].kills = questProgress[currentQuest].kills + 1
-        end
     end
 end
+
